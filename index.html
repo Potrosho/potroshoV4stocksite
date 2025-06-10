@@ -1,90 +1,89 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Stock Dashboard</title>
+  <title>Stock Viewer</title>
   <style>
     body {
-      font-family: sans-serif;
-      background: #0f172a;
-      color: #e2e8f0;
-      padding: 2rem;
-    }
-    h1 {
-      text-align: center;
-      margin-bottom: 1rem;
+      font-family: Arial, sans-serif;
+      padding: 20px;
     }
     table {
-      width: 100%;
       border-collapse: collapse;
-      background-color: #1e293b;
+      width: 100%;
     }
     th, td {
-      padding: 0.75rem;
-      text-align: left;
-      border-bottom: 1px solid #334155;
-    }
-    th {
-      background-color: #1e40af;
-      color: white;
+      padding: 10px;
+      border: 1px solid #ddd;
+      text-align: center;
     }
     .up {
-      color: #4ade80;
+      color: green;
     }
     .down {
-      color: #f87171;
+      color: red;
+    }
+    .neutral {
+      color: black;
+    }
+    .penny {
+      font-style: italic;
     }
   </style>
 </head>
 <body>
-  <h1>📈 Live Stock Prices</h1>
+  <h1>Live Stock Prices</h1>
+  <p>Updates every 60 seconds</p>
   <table id="stocksTable">
     <thead>
       <tr>
         <th>Symbol</th>
         <th>Price</th>
         <th>Change</th>
-        <th>Owner</th>
+        <th>Owner ID</th>
       </tr>
     </thead>
-    <tbody></tbody>
+    <tbody>
+      <tr><td colspan="4">Loading...</td></tr>
+    </tbody>
   </table>
 
   <script>
-    const API_URL = "https://lacewing-proper-serval.ngrok-free.app/stocks";
+    const tableBody = document.querySelector("#stocksTable tbody");
 
-    async function loadStocks() {
+    async function fetchStocks() {
       try {
-        const res = await fetch(API_URL);
-        if (!res.ok) throw new Error("HTTP " + res.status);
+        const res = await fetch("https://lacewing-proper-serval.ngrok-free.app/stocks");
         const data = await res.json();
-        const tbody = document.querySelector("tbody");
-        tbody.innerHTML = "";
+        tableBody.innerHTML = "";
 
-        for (const [symbol, stock] of Object.entries(data)) {
-          const change = ((stock.price - stock.previous_price) / stock.previous_price) * 100;
-          const direction = change >= 0 ? "up" : "down";
-          const ownerId = stock.owner_id ?? "—";
+        for (const symbol in data) {
+          const stock = data[symbol];
+          const price = stock.price;
+          const previous = stock.previous_price;
+          const change = price - previous;
+          const changeClass = change > 0 ? "up" : change < 0 ? "down" : "neutral";
+          const pennyClass = stock.penny ? "penny" : "";
 
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td>${symbol}</td>
-            <td>$${stock.price.toFixed(2)}</td>
-            <td class="${direction}">${change.toFixed(2)}%</td>
-            <td>${ownerId}</td>
+          const row = `
+            <tr>
+              <td class="${pennyClass}">${symbol}</td>
+              <td class="${changeClass}">$${price.toFixed(2)}</td>
+              <td class="${changeClass}">${change > 0 ? "+" : ""}${change.toFixed(2)}</td>
+              <td>${stock.owner_id}</td>
+            </tr>
           `;
-          tbody.appendChild(tr);
+          tableBody.innerHTML += row;
         }
       } catch (err) {
-        alert("Failed to load stock data.");
-        console.error("Fetch error:", err);
+        tableBody.innerHTML = `<tr><td colspan="4">Failed to fetch data</td></tr>`;
+        console.error("Error fetching stocks:", err);
       }
     }
 
-    loadStocks();
-    setInterval(loadStocks, 15000); // refresh every 15s
+    fetchStocks();
+    setInterval(fetchStocks, 60000); // every 60 seconds
   </script>
 </body>
 </html>
