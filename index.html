@@ -1,0 +1,90 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Stock Dashboard</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      padding: 2rem;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: #1e293b;
+    }
+    th, td {
+      padding: 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid #334155;
+    }
+    th {
+      background-color: #1e40af;
+      color: white;
+    }
+    .up {
+      color: #4ade80;
+    }
+    .down {
+      color: #f87171;
+    }
+  </style>
+</head>
+<body>
+  <h1>📈 Live Stock Prices</h1>
+  <table id="stocksTable">
+    <thead>
+      <tr>
+        <th>Symbol</th>
+        <th>Price</th>
+        <th>Change</th>
+        <th>Owner</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    const API_URL = "https://lacewing-proper-serval.ngrok-free.app/stocks";
+
+    async function loadStocks() {
+      try {
+        const res = await fetch(API_URL);
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const data = await res.json();
+        const tbody = document.querySelector("tbody");
+        tbody.innerHTML = "";
+
+        for (const [symbol, stock] of Object.entries(data)) {
+          const change = ((stock.price - stock.previous_price) / stock.previous_price) * 100;
+          const direction = change >= 0 ? "up" : "down";
+          const ownerId = stock.owner_id ?? "—";
+
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${symbol}</td>
+            <td>$${stock.price.toFixed(2)}</td>
+            <td class="${direction}">${change.toFixed(2)}%</td>
+            <td>${ownerId}</td>
+          `;
+          tbody.appendChild(tr);
+        }
+      } catch (err) {
+        alert("Failed to load stock data.");
+        console.error("Fetch error:", err);
+      }
+    }
+
+    loadStocks();
+    setInterval(loadStocks, 15000); // refresh every 15s
+  </script>
+</body>
+</html>
